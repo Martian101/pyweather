@@ -204,7 +204,7 @@ class WeathReporGTK:
         
 	spawn_later(0.5, self.show_startup_notify)
 	
-	spawn_later(3600*2, self.auto_update)
+	spawn_later(2*2, self.auto_update)
 	
         logo_filename = os.path.join(os.path.abspath(os.path.dirname(__file__)), message['图片'])
 
