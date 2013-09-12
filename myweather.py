@@ -5,7 +5,9 @@
 
 
 import urllib2
+import socket
 import time
+import string
 import thread
 import sys
 import os
@@ -141,15 +143,21 @@ def weather_for_zip(zip_code):
     url = WEATHER_URL % zip_code
     net = True
     try:
-    	dom = minidom.parse(urllib2.urlopen(url))
+    	dom = minidom.parse(urllib2.urlopen(url, timeout=1.5))
     except:
     	print "不能从url获得信息，断网了？"
     	net = False
     if net:
+	wind = (dom.getElementsByTagName('yweather:wind'))[0] #风速
+	humidi = (dom.getElementsByTagName('yweather:atmosphere'))[0] #湿度
+	sun = (dom.getElementsByTagName('yweather:astronomy'))[0] #太阳升落      
     	node0 = (dom.getElementsByTagName('yweather:forecast'))[0]
     	node1 = (dom.getElementsByTagName('yweather:forecast'))[1]
-
     	return {
+    		'wind':wind.getAttribute('speed'),
+    		'humidi':humidi.getAttribute('humidity'),
+    		'sunup':sun.getAttribute('sunrise'),
+    		'sundown':sun.getAttribute('sunset'),
         	'low0': node0.getAttribute('low'),
         	'high0': node0.getAttribute('high'),
         	'code0': node0.getAttribute('code'),
@@ -169,12 +177,45 @@ def tell_weather(code):
         	weather = '有点危险～=～'
         	logofile = 'weather/xiaoxin.png'
     	else:
+    		t = (string.atoi(w['high0']) + string.atoi(w['low0']))/2
+    		td = string.atoi(w['high0']) - string.atoi(w['low0'])
+    		tds = ''
+    		ws = ''
+    		if td > 10:
+    			tds = '，还有今天温差很大！'
+    		v = string.atoi(w['wind'] * 1.609344)
+    		if f > 28:
+    			ws = ',注意今天刮大风！！'
+    		f = string.atoi(w['humidi'])
+    		ssd=(1.818*t+ 18.18)*(0.88 + 0.002*f)+(t- 32) / (45 -t)- 3.2 * v + 18.2
+    		print ssd
+    		ssd = round(ssd)
+    		print ssd
+    		if ssd > 90:
+    			notion = '尼玛，这温度是要逆天了啊'
+    		if ssd in range(86, 89):
+    			notion = '估计可能会很热，太阳要把人晒死了'
+    		if ssd in range(80, 86):
+    			notion = '应该会感觉到很热，不太舒适，保持好心情:D'
+    		if ssd in range(76, 80):
+    			notion = '也许会感觉热，不知道会不会下雨-U-'
+    		if ssd in range(71, 76):
+    			notion = '据说将会是很暖和，很舒适的感觉~'
+    		if ssd in range(59, 71):
+    			notion = '他们说，这个范围会是最舒适的'
+    		if ssd in range(51, 59):
+    			notion = '天气转凉，请严防感冒～'
+    		if ssd in range(39, 51):
+    			notion = '听说今天感觉会蛮清凉的，但不很舒适，加衣服吧！'
+    		if ssd in range(26, 39):
+    			notion = '天气已经很冷了，保暖防寒啊，多喝水'
+    		if ssd < 25:
+    			notion = '。。。总之是不爽，保重><'
         	weather0 = WEATHER_MAP[w['code0']]
         	weather1 = WEATHER_MAP[w['code1']]
         	logofile = WEATHER_PNG[w['code0']]
-    	message = '%s\n今天也许会%s,最高气温有%s,最低到%s\n明天也许会%s,最高气温有%s,最低到%s\
-    	\n好吧，我还不够智能><,鬼知道你该多穿衣服还是少出门...不过天气预报是准的~' \
-            	% (date, weather0, w['high0'], w['low0'],weather1, w['high1'], w['low1'])
+    	message = '%s 日出: %s  日落: %s 风速: %s\n今天也许会%s,最高气温%s,最低到%s\n明天也许会%s,最高气温%s,最低到%s\
+    	\n%s%s%s' % (date, w['sunup'], w['sundown'], w['wind'], weather0, w['high0'], w['low0'],weather1, w['high1'], w['low1'], notion,ws,tds)
     else:
     	logofile = 'weather/xiaoxin.png'
     	message = '难道是断网了...自己去看看吧><'
@@ -222,8 +263,8 @@ class WeathReporGTK:
 
     def make_menu(self):
         menu = gtk.Menu()
-        itemlist = [('Show Info', self.on_show),
-        	    ('Update Info',self.on_update),
+        itemlist = [('Show Weather', self.on_show),
+        	    ('Update Weather',self.on_update),
                     ('Quit', gtk.main_quit)]
         for text, callback in itemlist:
             item = gtk.MenuItem(text)
@@ -250,11 +291,9 @@ class WeathReporGTK:
         
     def on_update(self, widget, data=None):
     	os.execl("/usr/bin/python", "python", 'myweather.py')
-    	print '天气更新成功啦！'
+    	print '天气更新成功！'
     def auto_update(self):
-    	while True:
-    		time.sleep(10)
-    		os.execl("/usr/bin/python", "python", 'myweather.py')
+    	os.execl("/usr/bin/python", "python", 'myweather.py')
 
 def main():
     window = gtk.Window()
