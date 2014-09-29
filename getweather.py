@@ -139,7 +139,7 @@ def weather_for_zip(zip_code):
         	'code1': node1.getAttribute('code')
     	}
     return net
-# Moonya会调用这个函数，传进来的是一个地区参数
+# 获得天气信息，传进来的是一个地区参数
 def tell_weather(code):
     date = time.strftime('%Y-%m-%d',time.localtime(time.time()))
     w = weather_for_zip(code)
