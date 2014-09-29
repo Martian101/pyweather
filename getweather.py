@@ -160,6 +160,7 @@ def tell_weather(code):
     		if v > 28:
     			ws = ',注意今天刮大风！！'
     		f = string.atoi(w['humidi'])
+    		#参考了几篇论文后选择的人体舒适度计算公式
     		ssd=(1.818*t+ 18.18)*(0.88 + 0.002*f)+(t- 32) / (45 -t)- 3.2 * v + 18.2
     		print ssd
     		ssd = round(ssd)
